@@ -12,9 +12,24 @@ server.listen(port, () => {
 // Routing
 app.use(express.static(path.join(__dirname, 'public')));
 
+
+// Chatroom
+
+let numUsers = 0;
+
 io.on('connection', (socket) => {
   let addedUser = false;
+  
   console.log('someone connected');
+
+  // when the client emits 'new message', this listens and executes
+  socket.on('new message', (data) => {
+    // we tell the client to execute 'new message'
+    socket.broadcast.emit('new message', {
+      username: socket.username,
+      message: data
+    });
+  });
 
   // when the client emits 'add user', this listens and executes
   socket.on('add user', username => {
@@ -25,7 +40,7 @@ io.on('connection', (socket) => {
     ++numUsers;
     addedUser = true;
     socket.emit('login', {
-      numUser: numUsers
+      numUsers: numUsers
     });
 
     // echo globally (all clients) that a person has connected
@@ -34,4 +49,30 @@ io.on('connection', (socket) => {
       numUsers: numUsers
     });
   });
+
+  // when the client emits 'typing', we broadcast it to others
+  socket.on('typing', () => {
+    socket.broadcast.emit('typing', {
+      username: socket.username
+    });
+  });
+  
+  socket.on('stop typing', () => {
+    socket.broadcast.emit('stop typing', {
+      username: socket.username
+    });
+  });
+
+  socket.on('disconnect', () => {
+    if (addedUser) {
+      --numUsers;
+
+      // echo globally that this client has left
+      socket.broadcast.emit('user left', {
+        username: socket.username,
+        numUsers: numUsers
+      });
+    }
+  });
+
 })
