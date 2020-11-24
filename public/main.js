@@ -1,5 +1,5 @@
 $(function() {
-  let FADE_TIME = 2000;
+  let FADE_TIME = 500;
   let TYPING_TIMER_LENGTH = 400; // ms
   let COLORS = [
     '#e21400', '#91580f', '#f8a700', '#f78b00',
@@ -91,7 +91,6 @@ $(function() {
     addMessageElement($messageDiv, options);
   }
 
-
   // Gets the 'X is typing' messages of a user
   const getTypingMessages = (data) => {
     return $('.typing.message').filter(function (i) {
@@ -117,7 +116,6 @@ $(function() {
     if (typeof options.prepend === 'undefined') {
       options.prepend = false;
     }
-
 
     // Apply options
     if (options.fade) {
@@ -181,6 +179,7 @@ $(function() {
     userNameColor = COLORS[index];
     return COLORS[index];
   }
+
   // Keyboard Events
 
   $window.keydown(event => {
@@ -200,14 +199,29 @@ $(function() {
     }
   });
 
+  
   // on any keypress
   $inputMessage.on('input', () => {
     updateTyping();
   });
 
+  // private messaging
+  $(document).on('click','.username', function() {
+    // make sure recipient is not yourself
+    if (username !== $(this).text()) {
+        let username = $(this).text(),
+
+        message = prompt("type your message");
+        socket.emit('private_chat',{
+            to : username,
+            message : message
+        });
+    }
+  });
+
   // Click events
 
-  // Focus input when clicking anywhere on login page
+  Focus input when clicking anywhere on login page
   $loginPage.click(() => {
     $currentInput.focus();
   });
@@ -216,7 +230,6 @@ $(function() {
   $inputMessage.click(() => {
     $inputMessage.focus();
   });
-
 
   // Socket events
 
@@ -256,6 +269,14 @@ $(function() {
   // Whenever the server emits 'stop typing', kill the typing message
   socket.on('stop typing', (data) => {
     removeChatTyping(data);
+  });
+
+  /*Received private messages*/
+  socket.on('private_chat',function(data){
+    var username = data.username;
+    var message = data.message;
+
+    alert(username+': '+message);
   });
 
   socket.on('disconnect', () => {

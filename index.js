@@ -15,11 +15,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Chatroom
 
+/* object to collect connected users*/
+var connectedUsers = {};
+
 let numUsers = 0;
 
 io.on('connection', (socket) => {
   let addedUser = false;
-  
+
   console.log('someone connected');
 
   // when the client emits 'new message', this listens and executes
@@ -37,6 +40,7 @@ io.on('connection', (socket) => {
     
     // we store the username in the socket session for this client
     socket.username = username;
+    connectedUsers[username] = socket;
     ++numUsers;
     addedUser = true;
     socket.emit('login', {
@@ -63,6 +67,23 @@ io.on('connection', (socket) => {
     });
   });
 
+
+  /*Private chat*/
+  socket.on('private_chat',function(data){
+    const to = data.to,
+            message = data.message;
+
+    if(connectedUsers.hasOwnProperty(to)){
+        connectedUsers[to].emit('private_chat',{
+            //The sender's username
+            username : socket.username,
+
+            //Message sent to receiver
+            message : message
+        });
+    }
+  }); 
+  
   socket.on('disconnect', () => {
     if (addedUser) {
       --numUsers;
